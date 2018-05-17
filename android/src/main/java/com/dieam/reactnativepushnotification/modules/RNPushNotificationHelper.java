@@ -10,6 +10,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -19,6 +20,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
 import com.facebook.react.bridge.ReadableMap;
@@ -157,6 +159,8 @@ public class RNPushNotificationHelper {
                 title = context.getPackageManager().getApplicationLabel(appInfo).toString();
             }
 
+            Bundle bundleMeta = context.getPackageManager().getApplicationInfo(context.getPackageName(), PackageManager.GET_META_DATA).metaData;
+
             NotificationCompat.Builder notification = new NotificationCompat.Builder(context)
                     .setContentTitle(title)
                     .setTicker(bundle.getString("ticker"))
@@ -185,7 +189,6 @@ public class RNPushNotificationHelper {
             }
 
             int smallIconResId;
-            int largeIconResId;
 
             String smallIcon = bundle.getString("smallIcon");
 
@@ -193,6 +196,10 @@ public class RNPushNotificationHelper {
                 smallIconResId = res.getIdentifier(smallIcon, "mipmap", packageName);
             } else {
                 smallIconResId = res.getIdentifier("ic_notification", "mipmap", packageName);
+                int metaSmallIcon = bundleMeta.getInt("com.google.firebase.messaging.default_notification_icon");
+                if(metaSmallIcon != 0){
+                    smallIconResId = metaSmallIcon;
+                }
             }
 
             if (smallIconResId == 0) {
@@ -201,18 +208,6 @@ public class RNPushNotificationHelper {
                 if (smallIconResId == 0) {
                     smallIconResId = android.R.drawable.ic_dialog_info;
                 }
-            }
-
-            if (largeIcon != null) {
-                largeIconResId = res.getIdentifier(largeIcon, "mipmap", packageName);
-            } else {
-                largeIconResId = res.getIdentifier("ic_launcher", "mipmap", packageName);
-            }
-
-            Bitmap largeIconBitmap = BitmapFactory.decodeResource(res, largeIconResId);
-
-            if (largeIconResId != 0 && (largeIcon != null || Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)) {
-                notification.setLargeIcon(largeIconBitmap);
             }
 
             notification.setSmallIcon(smallIconResId);
@@ -263,6 +258,11 @@ public class RNPushNotificationHelper {
                 String color = bundle.getString("color");
                 if (color != null) {
                     notification.setColor(Color.parseColor(color));
+                } else {
+                    int metaIcon = bundleMeta.getInt("com.google.firebase.messaging.default_notification_color");
+                    if(metaIcon != 0){
+                        notification.setColor(ContextCompat.getColor(context, metaIcon));
+                    }
                 }
             }
 
